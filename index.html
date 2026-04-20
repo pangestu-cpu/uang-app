@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>UANG - Catatan Mingguan</title>
+
+    <!-- Web Manifest Inline -->
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlVBTkcgS2V1YW5nYW4iLAogICJzaG9ydF9uYW1lIjogIlVBTkciLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2Y4ZmFmYyIsCiAgInRoZW1lX2NvbG9yIjogIiMyNTYzZWIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZnJlZXBpay5jb20vNTEyLzI0ODkvMjQ4OTcxNC5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgIH0KICBdCn0=">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-4xl font-extrabold text-blue-600 tracking-tight">UANG.</h1>
+                <p class="text-slate-500 font-medium" id="weekRangeDisplay">Memuat rentang minggu...</p>
+            </div>
+            <div class="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+                <span class="text-blue-700 font-bold" id="totalBalance">Rp 0</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Form Input -->
+            <div class="md:col-span-1">
+                <div class="card p-6 sticky top-8">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <span>📝</span> Tambah Catatan
+                    </h2>
+                    <form id="transactionForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tipe</label>
+                            <select id="type" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                <option value="pemasukan">Pemasukan (In)</option>
+                                <option value="pengeluaran">Pengeluaran (Out)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Keterangan</label>
+                            <input type="text" id="description" placeholder="Makan siang, Gaji, dll" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Jumlah (Rp)</label>
+                            <input type="number" id="amount" placeholder="0" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tanggal</label>
+                            <input type="date" id="date" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-200 active:scale-95 transition-transform">
+                            Simpan Catatan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Ringkasan & Riwayat -->
+            <div class="md:col-span-2 space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-4 border-l-4 border-emerald-500">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Pemasukan</p>
+                        <p class="text-xl font-bold text-emerald-600" id="statIn">Rp 0</p>
+                    </div>
+                    <div class="card p-4 border-l-4 border-rose-500">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Pengeluaran</p>
+                        <p class="text-xl font-bold text-rose-600" id="statOut">Rp 0</p>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Grafik Mingguan</h3>
+                    <div class="h-48">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700">Riwayat</h3>
+                        <button onclick="clearAllData()" class="text-xs text-rose-500 hover:underline font-medium">Hapus Semua</button>
+                    </div>
+                    
+                    <div id="transactionList" class="divide-y divide-slate-100">
+                        <!-- Data transaksi muncul di sini -->
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div id="paginationControls" class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                        <button id="prevBtn" onclick="changePage(-1)" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ← Sebelumnya
+                        </button>
+                        <span id="pageInfo" class="text-xs font-medium text-slate-500">Halaman 1 dari 1</span>
+                        <button id="nextBtn" onclick="changePage(1)" class="px-3 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Selanjutnya →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIKA SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swContent = `
+                    const CACHE_NAME = 'uang-v2';
+                    const ASSETS = ['./', './index.html', 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net/npm/chart.js'];
+                    self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))); });
+                    self.addEventListener('fetch', (e) => { e.respondWith(caches.match(e.request).then(res => res || fetch(e.request))); });
+                `;
+                const blob = new Blob([swContent], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW failed', err));
+            });
+        }
+
+        // --- LOGIKA APLIKASI ---
+        let transactions = JSON.parse(localStorage.getItem('uang_transactions')) || [];
+        let myChart;
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        function getCurrentCycle() {
+            const now = new Date();
+            const day = now.getDay(); 
+            let diffToFriday = (day >= 5) ? (day - 5) : (day + 2);
+            let friday = new Date(now);
+            friday.setDate(now.getDate() - diffToFriday);
+            friday.setHours(0,0,0,0);
+            let thursday = new Date(friday);
+            thursday.setDate(friday.getDate() + 6);
+            thursday.setHours(23,59,59,999);
+            return { start: friday, end: thursday };
+        }
+
+        const cycle = getCurrentCycle();
+
+        function formatDate(date) {
+            return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(date));
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            updateUI();
+        }
+
+        function updateUI() {
+            const list = document.getElementById('transactionList');
+            document.getElementById('weekRangeDisplay').innerText = `${formatDate(cycle.start)} - ${formatDate(cycle.end)}`;
+
+            list.innerHTML = '';
+            let totalIn = 0; let totalOut = 0;
+
+            // Filter data sesuai siklus 7 hari
+            const filteredTransactions = transactions.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= cycle.start && tDate <= cycle.end;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Hitung total uang
+            filteredTransactions.forEach(t => {
+                if (t.type === 'pemasukan') totalIn += Number(t.amount);
+                else totalOut += Number(t.amount);
+            });
+
+            // Logika Paginasi
+            const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedItems = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
+
+            paginatedItems.forEach((t) => {
+                const isInc = t.type === 'pemasukan';
+                list.innerHTML += `
+                    <div class="p-4 flex justify-between items-center bg-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs ${isInc ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+                                ${isInc ? 'IN' : 'OUT'}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-800 text-sm">${t.description}</p>
+                                <p class="text-[10px] text-slate-400 uppercase">${formatDate(t.date)}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-sm ${isInc ? 'text-emerald-600' : 'text-rose-600'}">
+                                ${isInc ? '+' : '-'} ${formatCurrency(t.amount)}
+                            </p>
+                            <button onclick="deleteTransaction('${t.id}')" class="text-[10px] text-rose-300 font-bold uppercase tracking-tighter">Hapus</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Update info paginasi
+            document.getElementById('pageInfo').innerText = `Halaman ${currentPage} dari ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+            if (filteredTransactions.length === 0) {
+                list.innerHTML = '<div class="p-8 text-center text-slate-400 italic text-sm">Belum ada catatan minggu ini</div>';
+                document.getElementById('paginationControls').classList.add('hidden');
+            } else {
+                document.getElementById('paginationControls').classList.remove('hidden');
+            }
+
+            document.getElementById('statIn').innerText = formatCurrency(totalIn);
+            document.getElementById('statOut').innerText = formatCurrency(totalOut);
+            document.getElementById('totalBalance').innerText = formatCurrency(totalIn - totalOut);
+
+            updateChart(totalIn, totalOut);
+            localStorage.setItem('uang_transactions', JSON.stringify(transactions));
+        }
+
+        function updateChart(totalIn, totalOut) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Masuk', 'Keluar'],
+                    datasets: [{
+                        data: [totalIn || 1, totalOut || 0],
+                        backgroundColor: ['#10b981', '#f43f5e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        document.getElementById('transactionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            transactions.push({
+                type: document.getElementById('type').value,
+                description: document.getElementById('description').value,
+                amount: document.getElementById('amount').value,
+                date: document.getElementById('date').value,
+                id: Date.now().toString()
+            });
+            currentPage = 1; // Kembali ke halaman 1 saat input data baru
+            updateUI();
+            e.target.reset();
+            document.getElementById('date').valueAsDate = new Date();
+        });
+
+        function deleteTransaction(id) {
+            if(confirm('Hapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                updateUI();
+            }
+        }
+
+        function clearAllData() {
+            if(confirm('Hapus SEMUA data?')) {
+                transactions = [];
+                currentPage = 1;
+                updateUI();
+            }
+        }
+
+        window.onload = () => {
+            document.getElementById('date').valueAsDate = new Date();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
